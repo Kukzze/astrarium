@@ -39,11 +39,11 @@ import net.runelite.client.ui.PluginPanel;
 
 public class AstrariumPanel extends PluginPanel
 {
-	private static final String TAB_PROGRESS = "PROGRESS";
+	private static final String TAB_RADAR = "RADAR";
 	private static final String TAB_QUESTS = "QUESTS";
 	private static final String TAB_DIARIES = "DIARIES";
-	private static final String TAB_GEAR = "GEAR";
-	private static final String TAB_DAILIES = "DAILIES";
+	private static final String TAB_COMBAT = "COMBAT";
+	private static final String TAB_UTILITIES = "UTILITIES";
 	private static final String TAB_SESSION = "SESSION";
 
 	private final AstrariumPlugin plugin;
@@ -61,20 +61,21 @@ public class AstrariumPanel extends PluginPanel
 	private final CardLayout cardLayout = new CardLayout();
 	private final JPanel contentCards = new JPanel(cardLayout);
 
-	private final JPanel progressContainer = new JPanel();
+	private final JPanel radarContainer = new JPanel();
 	private final JPanel questsContainer = new JPanel();
 	private final JPanel diariesContainer = new JPanel();
-	private final JPanel gearContainer = new JPanel();
-	private final JPanel dailiesContainer = new JPanel();
+	private final JPanel combatContainer = new JPanel();
+	private final JPanel utilitiesContainer = new JPanel();
 	private final JPanel sessionContainer = new JPanel();
 
-	private final JButton progressNavBtn = new JButton("\uD83E\uDDED Radar");
+	private final JButton radarNavBtn = new JButton("\uD83E\uDDED Radar");
 	private final JButton questsNavBtn = new JButton("\uD83D\uDDFA\uFE0F Quests");
 	private final JButton diariesNavBtn = new JButton("\uD83D\uDCDC Diary");
-	private final JButton gearNavBtn = new JButton("\u2694\uFE0F Gear");
-	private final JButton dailiesNavBtn = new JButton("\u2600\uFE0F Daily");
+	private final JButton combatNavBtn = new JButton("\u2694\uFE0F PvM");
+	private final JButton utilitiesNavBtn = new JButton("\uD83C\uDF3E Farm");
 	private final JButton sessionNavBtn = new JButton("\uD83D\uDCCA Log");
 
+	// Selectors
 	private final JComboBox<Skill> skillSelector = new JComboBox<>(new Skill[]{
 		Skill.AGILITY, Skill.THIEVING, Skill.PRAYER, Skill.CONSTRUCTION,
 		Skill.HUNTER, Skill.MAGIC, Skill.RANGED, Skill.ATTACK, Skill.STRENGTH,
@@ -83,6 +84,10 @@ public class AstrariumPanel extends PluginPanel
 	});
 
 	private final JComboBox<GearProgression.Style> gearStyleSelector = new JComboBox<>(GearProgression.Style.values());
+	private final JComboBox<String> bossSelector = new JComboBox<>(new String[]{
+		"Vorkath", "Zulrah", "The Corrupted Gauntlet (CG)", "Phantom Muspah",
+		"Tombs of Amascut (ToA)", "Chambers of Xeric (CoX)", "Theatre of Blood (ToB)", "Grotesque Guardians"
+	});
 
 	private final Set<String> completedDailies = new HashSet<>();
 	private Map<Skill, Integer> cachedSkills = new EnumMap<>(Skill.class);
@@ -171,26 +176,26 @@ public class AstrariumPanel extends PluginPanel
 		JPanel navRow2 = new JPanel(new GridLayout(1, 3, 3, 0));
 		navRow2.setOpaque(false);
 
-		styleNavButton(progressNavBtn, true);
+		styleNavButton(radarNavBtn, true);
 		styleNavButton(questsNavBtn, false);
 		styleNavButton(diariesNavBtn, false);
-		styleNavButton(gearNavBtn, false);
-		styleNavButton(dailiesNavBtn, false);
+		styleNavButton(combatNavBtn, false);
+		styleNavButton(utilitiesNavBtn, false);
 		styleNavButton(sessionNavBtn, false);
 
-		progressNavBtn.addActionListener(e -> switchTab(TAB_PROGRESS, progressNavBtn));
+		radarNavBtn.addActionListener(e -> switchTab(TAB_RADAR, radarNavBtn));
 		questsNavBtn.addActionListener(e -> switchTab(TAB_QUESTS, questsNavBtn));
 		diariesNavBtn.addActionListener(e -> switchTab(TAB_DIARIES, diariesNavBtn));
-		gearNavBtn.addActionListener(e -> switchTab(TAB_GEAR, gearNavBtn));
-		dailiesNavBtn.addActionListener(e -> switchTab(TAB_DAILIES, dailiesNavBtn));
+		combatNavBtn.addActionListener(e -> switchTab(TAB_COMBAT, combatNavBtn));
+		utilitiesNavBtn.addActionListener(e -> switchTab(TAB_UTILITIES, utilitiesNavBtn));
 		sessionNavBtn.addActionListener(e -> switchTab(TAB_SESSION, sessionNavBtn));
 
-		navRow1.add(progressNavBtn);
+		navRow1.add(radarNavBtn);
 		navRow1.add(questsNavBtn);
 		navRow1.add(diariesNavBtn);
 
-		navRow2.add(gearNavBtn);
-		navRow2.add(dailiesNavBtn);
+		navRow2.add(combatNavBtn);
+		navRow2.add(utilitiesNavBtn);
 		navRow2.add(sessionNavBtn);
 
 		navContainer.add(navRow1);
@@ -209,32 +214,37 @@ public class AstrariumPanel extends PluginPanel
 		add(topContainer, BorderLayout.NORTH);
 
 		// Content Panes
-		setupContentPanel(progressContainer);
+		setupContentPanel(radarContainer);
 		setupContentPanel(questsContainer);
 		setupContentPanel(diariesContainer);
-		setupContentPanel(gearContainer);
-		setupContentPanel(dailiesContainer);
+		setupContentPanel(combatContainer);
+		setupContentPanel(utilitiesContainer);
 		setupContentPanel(sessionContainer);
 
-		contentCards.add(createScrollPane(progressContainer), TAB_PROGRESS);
+		contentCards.add(createScrollPane(radarContainer), TAB_RADAR);
 		contentCards.add(createScrollPane(questsContainer), TAB_QUESTS);
 		contentCards.add(createScrollPane(diariesContainer), TAB_DIARIES);
-		contentCards.add(createScrollPane(gearContainer), TAB_GEAR);
-		contentCards.add(createScrollPane(dailiesContainer), TAB_DAILIES);
+		contentCards.add(createScrollPane(combatContainer), TAB_COMBAT);
+		contentCards.add(createScrollPane(utilitiesContainer), TAB_UTILITIES);
 		contentCards.add(createScrollPane(sessionContainer), TAB_SESSION);
 
 		add(contentCards, BorderLayout.CENTER);
 
-		// Selectors setup
+		// Listeners
 		skillSelector.setBackground(ColorScheme.DARKER_GRAY_COLOR);
 		skillSelector.setForeground(Color.WHITE);
 		skillSelector.setFocusable(false);
-		skillSelector.addActionListener(e -> refreshProgressTab());
+		skillSelector.addActionListener(e -> refreshRadarTab());
 
 		gearStyleSelector.setBackground(ColorScheme.DARKER_GRAY_COLOR);
 		gearStyleSelector.setForeground(Color.WHITE);
 		gearStyleSelector.setFocusable(false);
-		gearStyleSelector.addActionListener(e -> refreshGearTab(plugin.getClient()));
+		gearStyleSelector.addActionListener(e -> refreshCombatTab(plugin.getClient()));
+
+		bossSelector.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+		bossSelector.setForeground(Color.WHITE);
+		bossSelector.setFocusable(false);
+		bossSelector.addActionListener(e -> refreshCombatTab(plugin.getClient()));
 	}
 
 	private void setupContentPanel(JPanel panel)
@@ -266,11 +276,11 @@ public class AstrariumPanel extends PluginPanel
 	private void switchTab(String tabName, JButton activeBtn)
 	{
 		cardLayout.show(contentCards, tabName);
-		styleNavButton(progressNavBtn, activeBtn == progressNavBtn);
+		styleNavButton(radarNavBtn, activeBtn == radarNavBtn);
 		styleNavButton(questsNavBtn, activeBtn == questsNavBtn);
 		styleNavButton(diariesNavBtn, activeBtn == diariesNavBtn);
-		styleNavButton(gearNavBtn, activeBtn == gearNavBtn);
-		styleNavButton(dailiesNavBtn, activeBtn == dailiesNavBtn);
+		styleNavButton(combatNavBtn, activeBtn == combatNavBtn);
+		styleNavButton(utilitiesNavBtn, activeBtn == utilitiesNavBtn);
 		styleNavButton(sessionNavBtn, activeBtn == sessionNavBtn);
 	}
 
@@ -337,11 +347,11 @@ public class AstrariumPanel extends PluginPanel
 
 			totalLevelLabel.setText("Total Level: " + client.getTotalLevel());
 
-			refreshProgressTab();
+			refreshRadarTab();
 			refreshQuestsTab(client, skills);
 			refreshDiariesTab(skills);
-			refreshGearTab(client);
-			refreshDailiesTab();
+			refreshCombatTab(client);
+			refreshUtilitiesTab();
 			refreshSessionTab();
 
 			revalidate();
@@ -349,10 +359,10 @@ public class AstrariumPanel extends PluginPanel
 		});
 	}
 
-	// 1. PROGRESS TAB (Leveling Trainer + Milestones)
-	private void refreshProgressTab()
+	// 1. RADAR TAB (Skilling Leveling Guide + Milestone Progression)
+	private void refreshRadarTab()
 	{
-		progressContainer.removeAll();
+		radarContainer.removeAll();
 
 		// Skill Leveling Guide Selector
 		JPanel selectorCard = new JPanel(new BorderLayout(4, 0));
@@ -366,8 +376,8 @@ public class AstrariumPanel extends PluginPanel
 		selectorCard.add(pickLabel, BorderLayout.WEST);
 		selectorCard.add(skillSelector, BorderLayout.CENTER);
 
-		progressContainer.add(selectorCard);
-		progressContainer.add(Box.createVerticalStrut(6));
+		radarContainer.add(selectorCard);
+		radarContainer.add(Box.createVerticalStrut(6));
 
 		Skill selectedSkill = (Skill) skillSelector.getSelectedItem();
 		if (selectedSkill == null) selectedSkill = Skill.AGILITY;
@@ -416,8 +426,8 @@ public class AstrariumPanel extends PluginPanel
 			currentCard.add(Box.createVerticalStrut(3));
 			currentCard.add(notes);
 
-			progressContainer.add(currentCard);
-			progressContainer.add(Box.createVerticalStrut(6));
+			radarContainer.add(currentCard);
+			radarContainer.add(Box.createVerticalStrut(6));
 		}
 
 		if (next != null)
@@ -442,22 +452,22 @@ public class AstrariumPanel extends PluginPanel
 			nextCard.add(Box.createVerticalStrut(2));
 			nextCard.add(nextName);
 
-			progressContainer.add(nextCard);
-			progressContainer.add(Box.createVerticalStrut(10));
+			radarContainer.add(nextCard);
+			radarContainer.add(Box.createVerticalStrut(10));
 		}
 
 		// Account Milestones Section
 		JLabel milestoneHeading = new JLabel("\uD83C\uDFC5 Account Milestone Radar");
 		milestoneHeading.setFont(FontManager.getRunescapeBoldFont());
 		milestoneHeading.setForeground(config.theme().getPrimaryColor());
-		progressContainer.add(milestoneHeading);
-		progressContainer.add(Box.createVerticalStrut(6));
+		radarContainer.add(milestoneHeading);
+		radarContainer.add(Box.createVerticalStrut(6));
 
 		for (Milestone milestone : MilestoneRepository.getMilestones())
 		{
 			JPanel card = createMilestoneCard(milestone, cachedSkills);
-			progressContainer.add(card);
-			progressContainer.add(Box.createVerticalStrut(6));
+			radarContainer.add(card);
+			radarContainer.add(Box.createVerticalStrut(6));
 		}
 	}
 
@@ -610,12 +620,12 @@ public class AstrariumPanel extends PluginPanel
 		}
 	}
 
-	// 4. GEAR TAB (BiS Progression Ladder + Activity Readiness Audit)
-	private void refreshGearTab(Client client)
+	// 4. COMBAT & PVM TAB (Gear Upgrades, Slayer Audit, Boss Intel)
+	private void refreshCombatTab(Client client)
 	{
-		gearContainer.removeAll();
+		combatContainer.removeAll();
 
-		// Readiness warnings banner first
+		// Slayer gear readiness banner
 		List<ActivityReadiness.ReadinessWarning> warnings = ActivityReadiness.auditInventory(client, plugin.getCurrentSlayerTask());
 		JPanel statusBanner = new JPanel(new BorderLayout());
 		statusBanner.setBorder(new EmptyBorder(6, 6, 6, 6));
@@ -637,8 +647,8 @@ public class AstrariumPanel extends PluginPanel
 			statusBanner.add(warn, BorderLayout.CENTER);
 		}
 
-		gearContainer.add(statusBanner);
-		gearContainer.add(Box.createVerticalStrut(4));
+		combatContainer.add(statusBanner);
+		combatContainer.add(Box.createVerticalStrut(4));
 
 		for (ActivityReadiness.ReadinessWarning w : warnings)
 		{
@@ -662,26 +672,85 @@ public class AstrariumPanel extends PluginPanel
 			card.add(Box.createVerticalStrut(2));
 			card.add(desc);
 
-			gearContainer.add(card);
-			gearContainer.add(Box.createVerticalStrut(4));
+			combatContainer.add(card);
+			combatContainer.add(Box.createVerticalStrut(4));
 		}
 
-		gearContainer.add(Box.createVerticalStrut(6));
+		combatContainer.add(Box.createVerticalStrut(6));
 
-		// Combat Style Selector
+		// Boss Strategy Cheatsheet Section
+		JPanel bossCard = new JPanel(new BorderLayout(4, 0));
+		bossCard.setBackground(config.theme().getCardBackground());
+		bossCard.setBorder(new EmptyBorder(6, 6, 6, 6));
+
+		JLabel bossLabel = new JLabel("Boss Intel:");
+		bossLabel.setFont(FontManager.getRunescapeBoldFont());
+		bossLabel.setForeground(config.theme().getPrimaryColor());
+
+		bossCard.add(bossLabel, BorderLayout.WEST);
+		bossCard.add(bossSelector, BorderLayout.CENTER);
+
+		combatContainer.add(bossCard);
+		combatContainer.add(Box.createVerticalStrut(4));
+
+		String selectedBoss = (String) bossSelector.getSelectedItem();
+		for (BossIntel.BossGuide guide : BossIntel.getGuides())
+		{
+			if (guide.getBossName().equalsIgnoreCase(selectedBoss))
+			{
+				JPanel gCard = new JPanel();
+				gCard.setLayout(new BoxLayout(gCard, BoxLayout.Y_AXIS));
+				gCard.setBackground(config.theme().getCardBackground());
+				gCard.setBorder(BorderFactory.createCompoundBorder(
+					BorderFactory.createLineBorder(config.theme().getPrimaryColor(), 1),
+					new EmptyBorder(6, 6, 6, 6)
+				));
+
+				JLabel diff = new JLabel("\uD83C\uDFC6 " + guide.getDifficulty());
+				diff.setFont(FontManager.getRunescapeBoldFont());
+				diff.setForeground(config.theme().getPrimaryColor());
+
+				JLabel pray = new JLabel("<html><body style='width: 170px;'>\uD83D\uDEE1\uFE0F <b>Overhead:</b> " + guide.getOverheadPrayers() + "</body></html>");
+				pray.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 10));
+				pray.setForeground(Color.WHITE);
+
+				JLabel items = new JLabel("<html><body style='width: 170px;'>\uD83C\uDF92 <b>Essentials:</b> " + guide.getEssentialItems() + "</body></html>");
+				items.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 9));
+				items.setForeground(new Color(100, 240, 120));
+
+				JLabel mech = new JLabel("<html><body style='width: 170px;'>\u26A1 <b>Tactics:</b> " + guide.getCoreMechanics() + "</body></html>");
+				mech.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 9));
+				mech.setForeground(Color.LIGHT_GRAY);
+
+				gCard.add(diff);
+				gCard.add(Box.createVerticalStrut(3));
+				gCard.add(pray);
+				gCard.add(Box.createVerticalStrut(2));
+				gCard.add(items);
+				gCard.add(Box.createVerticalStrut(2));
+				gCard.add(mech);
+
+				combatContainer.add(gCard);
+				break;
+			}
+		}
+
+		combatContainer.add(Box.createVerticalStrut(8));
+
+		// Combat Gear Upgrades Section
 		JPanel styleCard = new JPanel(new BorderLayout(4, 0));
 		styleCard.setBackground(config.theme().getCardBackground());
 		styleCard.setBorder(new EmptyBorder(6, 6, 6, 6));
 
-		JLabel styleLabel = new JLabel("Ladder:");
+		JLabel styleLabel = new JLabel("Gear Ladder:");
 		styleLabel.setFont(FontManager.getRunescapeBoldFont());
 		styleLabel.setForeground(config.theme().getPrimaryColor());
 
 		styleCard.add(styleLabel, BorderLayout.WEST);
 		styleCard.add(gearStyleSelector, BorderLayout.CENTER);
 
-		gearContainer.add(styleCard);
-		gearContainer.add(Box.createVerticalStrut(6));
+		combatContainer.add(styleCard);
+		combatContainer.add(Box.createVerticalStrut(6));
 
 		GearProgression.Style selectedStyle = (GearProgression.Style) gearStyleSelector.getSelectedItem();
 		if (selectedStyle == null) selectedStyle = GearProgression.Style.MELEE;
@@ -714,21 +783,21 @@ public class AstrariumPanel extends PluginPanel
 			upCard.add(Box.createVerticalStrut(2));
 			upCard.add(src);
 
-			gearContainer.add(upCard);
-			gearContainer.add(Box.createVerticalStrut(4));
+			combatContainer.add(upCard);
+			combatContainer.add(Box.createVerticalStrut(4));
 		}
 	}
 
-	// 5. DAILIES TAB
-	private void refreshDailiesTab()
+	// 5. UTILITIES TAB (Dailies Checklist + Herb Patch Navigator)
+	private void refreshUtilitiesTab()
 	{
-		dailiesContainer.removeAll();
+		utilitiesContainer.removeAll();
 
-		JLabel heading = new JLabel("\u2600\uFE0F Daily & Weekly Resets Tracker");
+		JLabel heading = new JLabel("\u2600\uFE0F Daily & Weekly Resets");
 		heading.setFont(FontManager.getRunescapeBoldFont());
 		heading.setForeground(config.theme().getPrimaryColor());
-		dailiesContainer.add(heading);
-		dailiesContainer.add(Box.createVerticalStrut(6));
+		utilitiesContainer.add(heading);
+		utilitiesContainer.add(Box.createVerticalStrut(6));
 
 		for (DailiesTracker.DailyActivity act : DailiesTracker.getActivities())
 		{
@@ -773,12 +842,54 @@ public class AstrariumPanel extends PluginPanel
 			card.add(box, BorderLayout.WEST);
 			card.add(text, BorderLayout.CENTER);
 
-			dailiesContainer.add(card);
-			dailiesContainer.add(Box.createVerticalStrut(4));
+			utilitiesContainer.add(card);
+			utilitiesContainer.add(Box.createVerticalStrut(4));
+		}
+
+		utilitiesContainer.add(Box.createVerticalStrut(8));
+
+		// Herb Patches Section
+		JLabel herbHead = new JLabel("\uD83C\uDF3E All 9 Herb Patches & Teleports");
+		herbHead.setFont(FontManager.getRunescapeBoldFont());
+		herbHead.setForeground(config.theme().getPrimaryColor());
+		utilitiesContainer.add(herbHead);
+		utilitiesContainer.add(Box.createVerticalStrut(6));
+
+		for (FarmingPatches.HerbPatch patch : FarmingPatches.getPatches())
+		{
+			JPanel pCard = new JPanel();
+			pCard.setLayout(new BoxLayout(pCard, BoxLayout.Y_AXIS));
+			pCard.setBackground(config.theme().getCardBackground());
+			pCard.setBorder(BorderFactory.createCompoundBorder(
+				BorderFactory.createLineBorder(patch.isDiseaseFree() ? new Color(50, 180, 80) : ColorScheme.DARKER_GRAY_HOVER_COLOR, 1),
+				new EmptyBorder(6, 6, 6, 6)
+			));
+
+			String tag = patch.isDiseaseFree() ? "\u2705 " : "\uD83C\uDF3F ";
+			JLabel pTitle = new JLabel(tag + patch.getLocation() + (patch.isDiseaseFree() ? " (Disease-Free)" : ""));
+			pTitle.setFont(FontManager.getRunescapeBoldFont());
+			pTitle.setForeground(patch.isDiseaseFree() ? new Color(100, 240, 120) : Color.WHITE);
+
+			JLabel tele = new JLabel("<html><body style='width: 170px;'>\uD83D\uDE80 <b>Teleport:</b> " + patch.getTeleportMethod() + "</body></html>");
+			tele.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 10));
+			tele.setForeground(Color.LIGHT_GRAY);
+
+			JLabel perk = new JLabel("<html><body style='width: 170px;'>\u2B50 " + patch.getDiaryBonus() + "</body></html>");
+			perk.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 9));
+			perk.setForeground(config.theme().getPrimaryColor());
+
+			pCard.add(pTitle);
+			pCard.add(Box.createVerticalStrut(2));
+			pCard.add(tele);
+			pCard.add(Box.createVerticalStrut(2));
+			pCard.add(perk);
+
+			utilitiesContainer.add(pCard);
+			utilitiesContainer.add(Box.createVerticalStrut(4));
 		}
 	}
 
-	// 6. SESSION TAB
+	// 6. SESSION, UNLOCKS & WILDY TAB
 	private void refreshSessionTab()
 	{
 		sessionContainer.removeAll();
@@ -809,7 +920,7 @@ public class AstrariumPanel extends PluginPanel
 		JButton discordBtn = new JButton("\uD83D\uDCE4 Share Card to Discord");
 		discordBtn.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 10));
 		discordBtn.setFocusPainted(false);
-		discordBtn.setBackground(new Color(88, 101, 242)); // Discord blurple
+		discordBtn.setBackground(new Color(88, 101, 242));
 		discordBtn.setForeground(Color.WHITE);
 		discordBtn.setAlignmentX(CENTER_ALIGNMENT);
 		discordBtn.addActionListener(e -> plugin.exportSessionToDiscord(cachedCombatLevel));
@@ -825,14 +936,96 @@ public class AstrariumPanel extends PluginPanel
 		sessionContainer.add(statsCard);
 		sessionContainer.add(Box.createVerticalStrut(8));
 
-		// Timeline items
+		// Wilderness Survival Radar Section
+		JLabel wildyHead = new JLabel("\u26A0\uFE0F Wilderness Survival Rules");
+		wildyHead.setFont(FontManager.getRunescapeBoldFont());
+		wildyHead.setForeground(new Color(255, 90, 90));
+		sessionContainer.add(wildyHead);
+		sessionContainer.add(Box.createVerticalStrut(4));
+
+		for (WildernessSurvival.SurvivalTip tip : WildernessSurvival.getTips())
+		{
+			JPanel wCard = new JPanel();
+			wCard.setLayout(new BoxLayout(wCard, BoxLayout.Y_AXIS));
+			wCard.setBackground(config.theme().getCardBackground());
+			wCard.setBorder(BorderFactory.createCompoundBorder(
+				BorderFactory.createLineBorder(ColorScheme.DARKER_GRAY_HOVER_COLOR, 1),
+				new EmptyBorder(6, 6, 6, 6)
+			));
+
+			JLabel wTitle = new JLabel("[" + tip.getRuleLevel() + "] " + tip.getTitle());
+			wTitle.setFont(FontManager.getRunescapeBoldFont());
+			wTitle.setForeground(new Color(255, 120, 120));
+
+			JLabel wDesc = new JLabel("<html><body style='width: 170px;'>" + tip.getDescription() + "</body></html>");
+			wDesc.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 9));
+			wDesc.setForeground(Color.LIGHT_GRAY);
+
+			wCard.add(wTitle);
+			wCard.add(Box.createVerticalStrut(2));
+			wCard.add(wDesc);
+
+			sessionContainer.add(wCard);
+			sessionContainer.add(Box.createVerticalStrut(4));
+		}
+
+		sessionContainer.add(Box.createVerticalStrut(8));
+
+		// Transportation & Spellbook Unlocks Matrix Section
+		JLabel unlockHead = new JLabel("\uD83C\uDF10 Transport & Spellbook Matrix");
+		unlockHead.setFont(FontManager.getRunescapeBoldFont());
+		unlockHead.setForeground(config.theme().getPrimaryColor());
+		sessionContainer.add(unlockHead);
+		sessionContainer.add(Box.createVerticalStrut(4));
+
+		for (UnlockMatrix.UnlockEntry un : UnlockMatrix.getUnlocks(null))
+		{
+			JPanel uCard = new JPanel();
+			uCard.setLayout(new BoxLayout(uCard, BoxLayout.Y_AXIS));
+			uCard.setBackground(config.theme().getCardBackground());
+			uCard.setBorder(BorderFactory.createCompoundBorder(
+				BorderFactory.createLineBorder(ColorScheme.DARKER_GRAY_HOVER_COLOR, 1),
+				new EmptyBorder(6, 6, 6, 6)
+			));
+
+			JLabel uTitle = new JLabel("[" + un.getCategory() + "] " + un.getName());
+			uTitle.setFont(FontManager.getRunescapeBoldFont());
+			uTitle.setForeground(Color.WHITE);
+
+			JLabel uReq = new JLabel("<html><body style='width: 170px;'>\uD83D\uDD12 " + un.getRequirement() + "</body></html>");
+			uReq.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 9));
+			uReq.setForeground(config.theme().getPrimaryColor());
+
+			JLabel uDesc = new JLabel("<html><body style='width: 170px;'>\u2B50 " + un.getImpactDescription() + "</body></html>");
+			uDesc.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 9));
+			uDesc.setForeground(Color.LIGHT_GRAY);
+
+			uCard.add(uTitle);
+			uCard.add(Box.createVerticalStrut(2));
+			uCard.add(uReq);
+			uCard.add(Box.createVerticalStrut(2));
+			uCard.add(uDesc);
+
+			sessionContainer.add(uCard);
+			sessionContainer.add(Box.createVerticalStrut(4));
+		}
+
+		sessionContainer.add(Box.createVerticalStrut(8));
+
+		// Live Timeline Items Section
+		JLabel timeHead = new JLabel("\uD83D\uDCDC Live Session Timeline");
+		timeHead.setFont(FontManager.getRunescapeBoldFont());
+		timeHead.setForeground(config.theme().getPrimaryColor());
+		sessionContainer.add(timeHead);
+		sessionContainer.add(Box.createVerticalStrut(4));
+
 		List<AstrariumEvent> events = plugin.getTimelineEvents();
 		if (events.isEmpty())
 		{
 			JLabel empty = new JLabel("<html><center>No events recorded this session.<br>Slay bosses, level up, or solve clues!</center></html>", SwingConstants.CENTER);
 			empty.setFont(new Font(Font.SANS_SERIF, Font.ITALIC, 11));
 			empty.setForeground(Color.GRAY);
-			empty.setBorder(new EmptyBorder(20, 10, 10, 10));
+			empty.setBorder(new EmptyBorder(15, 10, 10, 10));
 			sessionContainer.add(empty);
 			return;
 		}
