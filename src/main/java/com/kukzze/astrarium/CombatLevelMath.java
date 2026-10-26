@@ -1,4 +1,4 @@
-package com.kukzze.chronicle;
+package com.kukzze.astrarium;
 
 import lombok.Getter;
 

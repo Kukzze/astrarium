@@ -1,7 +1,6 @@
-package com.kukzze.chronicle;
+package com.kukzze.astrarium;
 
 import com.google.common.collect.ImmutableMap;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import net.runelite.api.Skill;

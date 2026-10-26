@@ -1,11 +1,11 @@
-package com.kukzze.chronicle;
+package com.kukzze.astrarium;
 
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import lombok.Getter;
 
 @Getter
-public class ChronicleEvent
+public class AstrariumEvent
 {
 	@Getter
 	public enum Type
@@ -15,6 +15,7 @@ public class ChronicleEvent
 		CLUE_SCROLL("Clue Scroll", "\uD83D\uDCDC"),
 		QUEST_COMPLETE("Quest Complete", "\uD83C\uDFC6"),
 		COMBAT_ACHIEVEMENT("Combat Achievement", "\u2B50"),
+		COLLECTION_LOG("Collection Log", "\uD83D\uDCD6"),
 		MILESTONE_UNLOCKED("Milestone Reached", "\uD83D\uDD25");
 
 		private final String label;
@@ -40,7 +41,7 @@ public class ChronicleEvent
 	private final String headline;
 	private final String subtext;
 
-	public ChronicleEvent(Type type, String headline, String subtext)
+	public AstrariumEvent(Type type, String headline, String subtext)
 	{
 		this.timestamp = LocalTime.now().format(TIME_FORMAT);
 		this.type = type;

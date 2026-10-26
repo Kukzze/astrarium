@@ -14,7 +14,7 @@ repositories {
 }
 
 def runeLiteVersion = "latest.release"
-def pluginMainClass = 'com.kukzze.chronicle.ChroniclePluginTest'
+def pluginMainClass = 'com.kukzze.astrarium.AstrariumPluginTest'
 
 dependencies {
 	compileOnly group: 'net.runelite', name: 'client', version: runeLiteVersion

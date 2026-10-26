@@ -1,4 +1,4 @@
-package com.kukzze.chronicle;
+package com.kukzze.astrarium;
 
 import java.awt.Color;
 import lombok.Getter;
@@ -6,7 +6,7 @@ import lombok.RequiredArgsConstructor;
 
 @Getter
 @RequiredArgsConstructor
-public enum ChronicleTheme
+public enum AstrariumTheme
 {
 	SUNFIRE_GOLD(
 		"Sunfire Gold",

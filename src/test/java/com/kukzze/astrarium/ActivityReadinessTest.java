@@ -1,4 +1,4 @@
-package com.kukzze.chronicle;
+package com.kukzze.astrarium;
 
 import java.util.List;
 import net.runelite.api.Client;
@@ -38,30 +38,30 @@ public class ActivityReadinessTest
 	}
 
 	@Test
-	public void testKuraskWarningWhenMissingBroadWeapon()
+	public void testDragonWarningWhenMissingDragonfireShieldOrPotion()
 	{
 		Client client = mock(Client.class);
 		ItemContainer inv = mock(ItemContainer.class);
 		when(client.getItemContainer(InventoryID.INVENTORY)).thenReturn(inv);
-		when(inv.getItems()).thenReturn(new Item[]{new Item(ItemID.DRAGON_SCIMITAR, 1)});
+		when(inv.getItems()).thenReturn(new Item[]{new Item(ItemID.RUNE_SCIMITAR, 1)});
 
-		List<ActivityReadiness.ReadinessWarning> warnings = ActivityReadiness.auditInventory(client, "Kurasks");
+		List<ActivityReadiness.ReadinessWarning> warnings = ActivityReadiness.auditInventory(client, "Blue Dragons");
 		assertEquals(1, warnings.size());
-		assertTrue(warnings.get(0).getTitle().contains("Leaf-Bladed"));
+		assertTrue(warnings.get(0).getTitle().contains("Dragonfire Protection"));
 	}
 
 	@Test
-	public void testKuraskNoWarningWhenEquippingBroadBolts()
+	public void testDragonNoWarningWhenEquippingAntiDragonShield()
 	{
 		Client client = mock(Client.class);
 		ItemContainer inv = mock(ItemContainer.class);
 		ItemContainer equip = mock(ItemContainer.class);
 		when(client.getItemContainer(InventoryID.INVENTORY)).thenReturn(inv);
 		when(client.getItemContainer(InventoryID.EQUIPMENT)).thenReturn(equip);
-		when(inv.getItems()).thenReturn(new Item[]{new Item(ItemID.RUNE_CROSSBOW, 1)});
-		when(equip.getItems()).thenReturn(new Item[]{new Item(ItemID.BROAD_BOLTS, 500)});
+		when(inv.getItems()).thenReturn(new Item[]{new Item(ItemID.RUNE_SCIMITAR, 1)});
+		when(equip.getItems()).thenReturn(new Item[]{new Item(ItemID.ANTIDRAGON_SHIELD, 1)});
 
-		List<ActivityReadiness.ReadinessWarning> warnings = ActivityReadiness.auditInventory(client, "Kurasks");
+		List<ActivityReadiness.ReadinessWarning> warnings = ActivityReadiness.auditInventory(client, "Blue Dragons");
 		assertTrue(warnings.isEmpty());
 	}
 }

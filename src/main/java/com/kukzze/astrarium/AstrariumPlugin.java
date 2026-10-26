@@ -1,4 +1,4 @@
-package com.kukzze.chronicle;
+package com.kukzze.astrarium;
 
 import com.google.inject.Provides;
 import java.awt.image.BufferedImage;
@@ -35,15 +35,18 @@ import net.runelite.client.util.Text;
 @Slf4j
 @Singleton
 @PluginDescriptor(
-	name = "Chronicle",
-	description = "The ultimate player command center: visual progression roadmap, next combat level math, live session story timeline, and custom atmospheric themes.",
-	tags = {"player", "dashboard", "roadmap", "combat", "stats", "timeline", "themes", "progression", "chronicle", "kukzze"}
+	name = "Astrarium",
+	description = "Your personal Gielinor astrolabe: live combat level math, milestone progression radar, optimal quest & leveling guide, and gear readiness audit.",
+	tags = {"combat", "stats", "progression", "roadmap", "timeline", "dashboard", "quests", "leveling", "guide", "astrarium", "kukzze"}
 )
-public class ChroniclePlugin extends Plugin
+public class AstrariumPlugin extends Plugin
 {
-	private static final Pattern SLAYER_TASK_PATTERN = Pattern.compile("Your new task is to kill ([0-9]+) (.*)\\.");
-	private static final Pattern BOSS_KC_PATTERN = Pattern.compile("Your (.*) kill count is: ([0-9,]+)\\.");
-	private static final Pattern CLUE_PATTERN = Pattern.compile("You have completed ([0-9,]+) (.*) Treasure Trails\\.");
+	private static final Pattern SLAYER_TASK_PATTERN = Pattern.compile("(?:Your new task is to kill|You're assigned to kill) ([0-9]+) (.*)[.!]");
+	private static final Pattern BOSS_KC_PATTERN = Pattern.compile("Your (?:completed )?(.*?) (?:kill count|completion count|supply crate count|count) is:? ([0-9,]+)\\.");
+	private static final Pattern CLUE_PATTERN = Pattern.compile("You have completed ([0-9,]+) (.*) Treasure Trails?\\.");
+	private static final Pattern COLL_LOG_PATTERN = Pattern.compile("New item added to your collection log: (.*)");
+	private static final Pattern QUEST_PATTERN = Pattern.compile("(?:Congratulations, you have completed|Quest complete:) (.*?)[.!]");
+	private static final Pattern COMBAT_ACHIEVEMENT_PATTERN = Pattern.compile("Congratulations, you've completed an? (?:Easy|Medium|Hard|Elite|Master|Grandmaster) combat task: (.*)\\.");
 
 	@Inject
 	private Client client;
@@ -55,34 +58,34 @@ public class ChroniclePlugin extends Plugin
 	private ClientToolbar clientToolbar;
 
 	@Inject
-	private ChronicleConfig config;
+	private AstrariumConfig config;
 
 	@Getter
-	private final List<ChronicleEvent> timelineEvents = Collections.synchronizedList(new ArrayList<>());
+	private final List<AstrariumEvent> timelineEvents = Collections.synchronizedList(new ArrayList<>());
 
 	@Getter
 	private String currentSlayerTask = null;
 
 	private final Map<Skill, Integer> previousLevels = new EnumMap<>(Skill.class);
-	private ChroniclePanel panel;
+	private AstrariumPanel panel;
 	private NavigationButton navButton;
 	private boolean initialLoadComplete = false;
 
 	@Provides
-	ChronicleConfig provideConfig(ConfigManager configManager)
+	AstrariumConfig provideConfig(ConfigManager configManager)
 	{
-		return configManager.getConfig(ChronicleConfig.class);
+		return configManager.getConfig(AstrariumConfig.class);
 	}
 
 	@Override
 	protected void startUp()
 	{
-		panel = new ChroniclePanel(this, config);
+		panel = new AstrariumPanel(this, config);
 
 		final BufferedImage icon = ImageUtil.loadImageResource(getClass(), "/icon.png");
 
 		navButton = NavigationButton.builder()
-			.tooltip("Chronicle Hub")
+			.tooltip("Astrarium Hub")
 			.icon(icon)
 			.priority(4)
 			.panel(panel)
@@ -124,8 +127,8 @@ public class ChroniclePlugin extends Plugin
 		{
 			if (config.trackLevelUps())
 			{
-				timelineEvents.add(0, new ChronicleEvent(
-					ChronicleEvent.Type.LEVEL_UP,
+				timelineEvents.add(0, new AstrariumEvent(
+					AstrariumEvent.Type.LEVEL_UP,
 					skill.getName() + " reached Level " + newLevel + "!",
 					"XP: " + String.format("%,d", event.getXp())
 				));
@@ -149,18 +152,35 @@ public class ChroniclePlugin extends Plugin
 
 		String clean = Text.removeTags(event.getMessage());
 
-		// Boss KC
+		// Boss KC & Raids
 		Matcher bossMatcher = BOSS_KC_PATTERN.matcher(clean);
 		if (bossMatcher.find())
 		{
-			String boss = bossMatcher.group(1);
-			String kc = bossMatcher.group(2);
+			String boss = bossMatcher.group(1).trim();
+			String count = bossMatcher.group(2);
 			if (config.trackBossKills())
 			{
-				timelineEvents.add(0, new ChronicleEvent(
-					ChronicleEvent.Type.BOSS_KILL,
-					boss + " defeated!",
-					"Total Kill Count: " + kc
+				timelineEvents.add(0, new AstrariumEvent(
+					AstrariumEvent.Type.BOSS_KILL,
+					boss + " completed!",
+					"Count: " + count
+				));
+				panel.updatePlayerData(client);
+			}
+			return;
+		}
+
+		// Collection Log
+		Matcher collMatcher = COLL_LOG_PATTERN.matcher(clean);
+		if (collMatcher.find())
+		{
+			String item = collMatcher.group(1);
+			if (config.trackCollectionLog())
+			{
+				timelineEvents.add(0, new AstrariumEvent(
+					AstrariumEvent.Type.COLLECTION_LOG,
+					"Collection Log: " + item,
+					"Unlocked new unique drop!"
 				));
 				panel.updatePlayerData(client);
 			}
@@ -174,10 +194,10 @@ public class ChroniclePlugin extends Plugin
 			String amount = slayerMatcher.group(1);
 			String monster = slayerMatcher.group(2);
 			currentSlayerTask = monster;
-			timelineEvents.add(0, new ChronicleEvent(
-				ChronicleEvent.Type.MILESTONE_UNLOCKED,
+			timelineEvents.add(0, new AstrariumEvent(
+				AstrariumEvent.Type.MILESTONE_UNLOCKED,
 				"New Slayer Task: " + amount + " " + monster,
-				"Gear audit updated in Readiness tab"
+				"Gear audit updated in Gear tab"
 			));
 			panel.updatePlayerData(client);
 			return;
@@ -189,12 +209,49 @@ public class ChroniclePlugin extends Plugin
 		{
 			String count = clueMatcher.group(1);
 			String tier = clueMatcher.group(2);
-			timelineEvents.add(0, new ChronicleEvent(
-				ChronicleEvent.Type.CLUE_SCROLL,
-				tier + " Clue #" + count + " Solved!",
-				"Casket opened"
-			));
-			panel.updatePlayerData(client);
+			if (config.trackClues())
+			{
+				timelineEvents.add(0, new AstrariumEvent(
+					AstrariumEvent.Type.CLUE_SCROLL,
+					tier + " Clue #" + count + " Solved!",
+					"Casket opened"
+				));
+				panel.updatePlayerData(client);
+			}
+			return;
+		}
+
+		// Quest completions
+		Matcher questMatcher = QUEST_PATTERN.matcher(clean);
+		if (questMatcher.find())
+		{
+			String questName = questMatcher.group(1).trim();
+			if (config.trackQuests())
+			{
+				timelineEvents.add(0, new AstrariumEvent(
+					AstrariumEvent.Type.QUEST_COMPLETE,
+					questName + " Completed!",
+					"Quest points awarded"
+				));
+				panel.updatePlayerData(client);
+			}
+			return;
+		}
+
+		// Combat Achievements
+		Matcher caMatcher = COMBAT_ACHIEVEMENT_PATTERN.matcher(clean);
+		if (caMatcher.find())
+		{
+			String taskName = caMatcher.group(1).trim();
+			if (config.trackQuests())
+			{
+				timelineEvents.add(0, new AstrariumEvent(
+					AstrariumEvent.Type.COMBAT_ACHIEVEMENT,
+					"Task: " + taskName,
+					"Combat achievement points earned"
+				));
+				panel.updatePlayerData(client);
+			}
 		}
 	}
 
@@ -212,7 +269,7 @@ public class ChroniclePlugin extends Plugin
 	@Subscribe
 	public void onConfigChanged(ConfigChanged event)
 	{
-		if ("chronicle".equals(event.getGroup()))
+		if ("astrarium".equals(event.getGroup()))
 		{
 			clientThread.invoke(() -> panel.updatePlayerData(client));
 		}

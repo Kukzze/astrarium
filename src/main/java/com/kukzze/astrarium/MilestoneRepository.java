@@ -1,4 +1,4 @@
-package com.kukzze.chronicle;
+package com.kukzze.astrarium;
 
 import com.google.common.collect.ImmutableMap;
 import java.util.ArrayList;

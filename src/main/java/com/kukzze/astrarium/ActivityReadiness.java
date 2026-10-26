@@ -1,4 +1,4 @@
-package com.kukzze.chronicle;
+package com.kukzze.astrarium;
 
 import com.google.common.collect.ImmutableSet;
 import java.util.ArrayList;
@@ -84,6 +84,40 @@ public class ActivityReadiness
 		ItemID.VS_SHIELD
 	);
 
+	private static final Set<Integer> CAVE_HORROR_PROTECTION = ImmutableSet.<Integer>builder()
+		.addAll(SLAYER_HELMETS)
+		.add(ItemID.WITCHWOOD_ICON)
+		.build();
+
+	private static final Set<Integer> WYVERN_SHIELDS = ImmutableSet.of(
+		ItemID.ELEMENTAL_SHIELD,
+		ItemID.MIND_SHIELD,
+		ItemID.DRAGONFIRE_SHIELD,
+		ItemID.ANCIENT_WYVERN_SHIELD
+	);
+
+	private static final Set<Integer> DRAGONFIRE_PROTECTION = ImmutableSet.of(
+		ItemID.ANTIDRAGON_SHIELD,
+		ItemID.DRAGONFIRE_SHIELD,
+		ItemID.ANCIENT_WYVERN_SHIELD,
+		ItemID.ANTIFIRE_POTION1,
+		ItemID.ANTIFIRE_POTION2,
+		ItemID.ANTIFIRE_POTION3,
+		ItemID.ANTIFIRE_POTION4,
+		ItemID.EXTENDED_ANTIFIRE1,
+		ItemID.EXTENDED_ANTIFIRE2,
+		ItemID.EXTENDED_ANTIFIRE3,
+		ItemID.EXTENDED_ANTIFIRE4,
+		ItemID.SUPER_ANTIFIRE_POTION1,
+		ItemID.SUPER_ANTIFIRE_POTION2,
+		ItemID.SUPER_ANTIFIRE_POTION3,
+		ItemID.SUPER_ANTIFIRE_POTION4,
+		ItemID.EXTENDED_SUPER_ANTIFIRE1,
+		ItemID.EXTENDED_SUPER_ANTIFIRE2,
+		ItemID.EXTENDED_SUPER_ANTIFIRE3,
+		ItemID.EXTENDED_SUPER_ANTIFIRE4
+	);
+
 	public static List<ReadinessWarning> auditInventory(Client client, String currentTask)
 	{
 		List<ReadinessWarning> warnings = new ArrayList<>();
@@ -95,7 +129,7 @@ public class ActivityReadiness
 
 		String lower = currentTask.toLowerCase();
 
-		// Gargoyles / Grotesque
+		// Gargoyles / Grotesque Guardians
 		if (lower.contains("gargoyle") || lower.contains("grotesque"))
 		{
 			if (!hasAnyItem(client, HAMMER_IDS))
@@ -181,6 +215,45 @@ public class ActivityReadiness
 				warnings.add(new ReadinessWarning(
 					"Missing Ice Coolers",
 					"Desert Lizards must be cooled off with Ice Coolers when weakened.",
+					true
+				));
+			}
+		}
+
+		// Cave Horrors
+		if (lower.contains("cave horror"))
+		{
+			if (!hasAnyItem(client, CAVE_HORROR_PROTECTION))
+			{
+				warnings.add(new ReadinessWarning(
+					"Missing Witchwood Icon",
+					"Cave Horrors will strike with fear and deal heavy unavoidable damage without a Witchwood Icon.",
+					true
+				));
+			}
+		}
+
+		// Wyverns (Skeletal, Fossil Island)
+		if (lower.contains("wyvern"))
+		{
+			if (!hasAnyItem(client, WYVERN_SHIELDS))
+			{
+				warnings.add(new ReadinessWarning(
+					"Missing Wyvern Shield",
+					"Wyvern icy breath will freeze you solid without an Elemental, Mind, or Ancient Wyvern Shield.",
+					true
+				));
+			}
+		}
+
+		// Dragons (Green, Blue, Red, Black, Iron, Steel, Mithril, Adamant, Rune, Vorkath, KBD)
+		if (lower.contains("dragon") || lower.contains("vorkath") || lower.contains("king black"))
+		{
+			if (!hasAnyItem(client, DRAGONFIRE_PROTECTION))
+			{
+				warnings.add(new ReadinessWarning(
+					"Missing Dragonfire Protection",
+					"Dragons breathe lethal fire (50+ damage)! Carry an Anti-dragon shield or Antifire potion.",
 					true
 				));
 			}
