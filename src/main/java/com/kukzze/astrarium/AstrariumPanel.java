@@ -12,12 +12,15 @@ import java.awt.GridLayout;
 import java.awt.RenderingHints;
 import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -36,11 +39,12 @@ import net.runelite.client.ui.PluginPanel;
 
 public class AstrariumPanel extends PluginPanel
 {
-	private static final String TAB_ROADMAP = "ROADMAP";
+	private static final String TAB_PROGRESS = "PROGRESS";
 	private static final String TAB_QUESTS = "QUESTS";
-	private static final String TAB_LEVELING = "LEVELING";
-	private static final String TAB_READINESS = "READINESS";
-	private static final String TAB_TIMELINE = "TIMELINE";
+	private static final String TAB_DIARIES = "DIARIES";
+	private static final String TAB_GEAR = "GEAR";
+	private static final String TAB_DAILIES = "DAILIES";
+	private static final String TAB_SESSION = "SESSION";
 
 	private final AstrariumPlugin plugin;
 	private final AstrariumConfig config;
@@ -57,17 +61,19 @@ public class AstrariumPanel extends PluginPanel
 	private final CardLayout cardLayout = new CardLayout();
 	private final JPanel contentCards = new JPanel(cardLayout);
 
-	private final JPanel roadmapContainer = new JPanel();
+	private final JPanel progressContainer = new JPanel();
 	private final JPanel questsContainer = new JPanel();
-	private final JPanel levelingContainer = new JPanel();
-	private final JPanel readinessContainer = new JPanel();
-	private final JPanel timelineContainer = new JPanel();
+	private final JPanel diariesContainer = new JPanel();
+	private final JPanel gearContainer = new JPanel();
+	private final JPanel dailiesContainer = new JPanel();
+	private final JPanel sessionContainer = new JPanel();
 
-	private final JButton roadmapNavBtn = new JButton("\uD83E\uDDED Radar");
+	private final JButton progressNavBtn = new JButton("\uD83E\uDDED Radar");
 	private final JButton questsNavBtn = new JButton("\uD83D\uDDFA\uFE0F Quests");
-	private final JButton levelingNavBtn = new JButton("\u26A1 Train");
-	private final JButton readinessNavBtn = new JButton("\uD83C\uDF92 Gear");
-	private final JButton timelineNavBtn = new JButton("\uD83D\uDCDC Log");
+	private final JButton diariesNavBtn = new JButton("\uD83D\uDCDC Diary");
+	private final JButton gearNavBtn = new JButton("\u2694\uFE0F Gear");
+	private final JButton dailiesNavBtn = new JButton("\u2600\uFE0F Daily");
+	private final JButton sessionNavBtn = new JButton("\uD83D\uDCCA Log");
 
 	private final JComboBox<Skill> skillSelector = new JComboBox<>(new Skill[]{
 		Skill.AGILITY, Skill.THIEVING, Skill.PRAYER, Skill.CONSTRUCTION,
@@ -76,7 +82,11 @@ public class AstrariumPanel extends PluginPanel
 		Skill.FISHING, Skill.COOKING, Skill.MINING, Skill.SMITHING
 	});
 
+	private final JComboBox<GearProgression.Style> gearStyleSelector = new JComboBox<>(GearProgression.Style.values());
+
+	private final Set<String> completedDailies = new HashSet<>();
 	private Map<Skill, Integer> cachedSkills = new EnumMap<>(Skill.class);
+	private int cachedCombatLevel = 3;
 
 	public AstrariumPanel(AstrariumPlugin plugin, AstrariumConfig config)
 	{
@@ -150,7 +160,7 @@ public class AstrariumPanel extends PluginPanel
 		headerCard.add(Box.createVerticalStrut(3));
 		headerCard.add(totalLevelLabel);
 
-		// Navigation Bar (2 rows for comfortable clickable touch on sidebar)
+		// Navigation Bar (2 rows of 3 buttons)
 		JPanel navContainer = new JPanel();
 		navContainer.setLayout(new BoxLayout(navContainer, BoxLayout.Y_AXIS));
 		navContainer.setBorder(new EmptyBorder(6, 4, 6, 4));
@@ -158,33 +168,36 @@ public class AstrariumPanel extends PluginPanel
 
 		JPanel navRow1 = new JPanel(new GridLayout(1, 3, 3, 0));
 		navRow1.setOpaque(false);
-		JPanel navRow2 = new JPanel(new GridLayout(1, 2, 3, 0));
+		JPanel navRow2 = new JPanel(new GridLayout(1, 3, 3, 0));
 		navRow2.setOpaque(false);
 
-		styleNavButton(roadmapNavBtn, true);
+		styleNavButton(progressNavBtn, true);
 		styleNavButton(questsNavBtn, false);
-		styleNavButton(levelingNavBtn, false);
-		styleNavButton(readinessNavBtn, false);
-		styleNavButton(timelineNavBtn, false);
+		styleNavButton(diariesNavBtn, false);
+		styleNavButton(gearNavBtn, false);
+		styleNavButton(dailiesNavBtn, false);
+		styleNavButton(sessionNavBtn, false);
 
-		roadmapNavBtn.addActionListener(e -> switchTab(TAB_ROADMAP, roadmapNavBtn));
+		progressNavBtn.addActionListener(e -> switchTab(TAB_PROGRESS, progressNavBtn));
 		questsNavBtn.addActionListener(e -> switchTab(TAB_QUESTS, questsNavBtn));
-		levelingNavBtn.addActionListener(e -> switchTab(TAB_LEVELING, levelingNavBtn));
-		readinessNavBtn.addActionListener(e -> switchTab(TAB_READINESS, readinessNavBtn));
-		timelineNavBtn.addActionListener(e -> switchTab(TAB_TIMELINE, timelineNavBtn));
+		diariesNavBtn.addActionListener(e -> switchTab(TAB_DIARIES, diariesNavBtn));
+		gearNavBtn.addActionListener(e -> switchTab(TAB_GEAR, gearNavBtn));
+		dailiesNavBtn.addActionListener(e -> switchTab(TAB_DAILIES, dailiesNavBtn));
+		sessionNavBtn.addActionListener(e -> switchTab(TAB_SESSION, sessionNavBtn));
 
-		navRow1.add(roadmapNavBtn);
+		navRow1.add(progressNavBtn);
 		navRow1.add(questsNavBtn);
-		navRow1.add(levelingNavBtn);
+		navRow1.add(diariesNavBtn);
 
-		navRow2.add(readinessNavBtn);
-		navRow2.add(timelineNavBtn);
+		navRow2.add(gearNavBtn);
+		navRow2.add(dailiesNavBtn);
+		navRow2.add(sessionNavBtn);
 
 		navContainer.add(navRow1);
 		navContainer.add(Box.createVerticalStrut(3));
 		navContainer.add(navRow2);
 
-		// Container for Top elements
+		// Top Container
 		JPanel topContainer = new JPanel();
 		topContainer.setLayout(new BoxLayout(topContainer, BoxLayout.Y_AXIS));
 		topContainer.setBackground(ColorScheme.DARK_GRAY_COLOR);
@@ -196,25 +209,32 @@ public class AstrariumPanel extends PluginPanel
 		add(topContainer, BorderLayout.NORTH);
 
 		// Content Panes
-		setupContentPanel(roadmapContainer);
+		setupContentPanel(progressContainer);
 		setupContentPanel(questsContainer);
-		setupContentPanel(levelingContainer);
-		setupContentPanel(readinessContainer);
-		setupContentPanel(timelineContainer);
+		setupContentPanel(diariesContainer);
+		setupContentPanel(gearContainer);
+		setupContentPanel(dailiesContainer);
+		setupContentPanel(sessionContainer);
 
-		contentCards.add(createScrollPane(roadmapContainer), TAB_ROADMAP);
+		contentCards.add(createScrollPane(progressContainer), TAB_PROGRESS);
 		contentCards.add(createScrollPane(questsContainer), TAB_QUESTS);
-		contentCards.add(createScrollPane(levelingContainer), TAB_LEVELING);
-		contentCards.add(createScrollPane(readinessContainer), TAB_READINESS);
-		contentCards.add(createScrollPane(timelineContainer), TAB_TIMELINE);
+		contentCards.add(createScrollPane(diariesContainer), TAB_DIARIES);
+		contentCards.add(createScrollPane(gearContainer), TAB_GEAR);
+		contentCards.add(createScrollPane(dailiesContainer), TAB_DAILIES);
+		contentCards.add(createScrollPane(sessionContainer), TAB_SESSION);
 
 		add(contentCards, BorderLayout.CENTER);
 
-		// Skill dropdown listener for leveling tab
+		// Selectors setup
 		skillSelector.setBackground(ColorScheme.DARKER_GRAY_COLOR);
 		skillSelector.setForeground(Color.WHITE);
 		skillSelector.setFocusable(false);
-		skillSelector.addActionListener(e -> refreshLeveling());
+		skillSelector.addActionListener(e -> refreshProgressTab());
+
+		gearStyleSelector.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+		gearStyleSelector.setForeground(Color.WHITE);
+		gearStyleSelector.setFocusable(false);
+		gearStyleSelector.addActionListener(e -> refreshGearTab(plugin.getClient()));
 	}
 
 	private void setupContentPanel(JPanel panel)
@@ -246,11 +266,12 @@ public class AstrariumPanel extends PluginPanel
 	private void switchTab(String tabName, JButton activeBtn)
 	{
 		cardLayout.show(contentCards, tabName);
-		styleNavButton(roadmapNavBtn, activeBtn == roadmapNavBtn);
+		styleNavButton(progressNavBtn, activeBtn == progressNavBtn);
 		styleNavButton(questsNavBtn, activeBtn == questsNavBtn);
-		styleNavButton(levelingNavBtn, activeBtn == levelingNavBtn);
-		styleNavButton(readinessNavBtn, activeBtn == readinessNavBtn);
-		styleNavButton(timelineNavBtn, activeBtn == timelineNavBtn);
+		styleNavButton(diariesNavBtn, activeBtn == diariesNavBtn);
+		styleNavButton(gearNavBtn, activeBtn == gearNavBtn);
+		styleNavButton(dailiesNavBtn, activeBtn == dailiesNavBtn);
+		styleNavButton(sessionNavBtn, activeBtn == sessionNavBtn);
 	}
 
 	public void updatePlayerData(Client client)
@@ -278,6 +299,7 @@ public class AstrariumPanel extends PluginPanel
 				skills.getOrDefault(Skill.RANGED, 1),
 				skills.getOrDefault(Skill.MAGIC, 1)
 			);
+			this.cachedCombatLevel = combat.getCombatLevel();
 
 			combatLevelLabel.setText("Combat Level: " + combat.getCombatLevel());
 			combatLevelLabel.setForeground(config.theme().getPrimaryColor());
@@ -315,26 +337,127 @@ public class AstrariumPanel extends PluginPanel
 
 			totalLevelLabel.setText("Total Level: " + client.getTotalLevel());
 
-			refreshRoadmap(skills);
-			refreshQuests(client, skills);
-			refreshLeveling();
-			refreshReadiness(client);
-			refreshTimeline(plugin.getTimelineEvents());
+			refreshProgressTab();
+			refreshQuestsTab(client, skills);
+			refreshDiariesTab(skills);
+			refreshGearTab(client);
+			refreshDailiesTab();
+			refreshSessionTab();
 
 			revalidate();
 			repaint();
 		});
 	}
 
-	private void refreshRoadmap(Map<Skill, Integer> skills)
+	// 1. PROGRESS TAB (Leveling Trainer + Milestones)
+	private void refreshProgressTab()
 	{
-		roadmapContainer.removeAll();
+		progressContainer.removeAll();
+
+		// Skill Leveling Guide Selector
+		JPanel selectorCard = new JPanel(new BorderLayout(4, 0));
+		selectorCard.setBackground(config.theme().getCardBackground());
+		selectorCard.setBorder(new EmptyBorder(6, 6, 6, 6));
+
+		JLabel pickLabel = new JLabel("Training:");
+		pickLabel.setFont(FontManager.getRunescapeBoldFont());
+		pickLabel.setForeground(config.theme().getPrimaryColor());
+
+		selectorCard.add(pickLabel, BorderLayout.WEST);
+		selectorCard.add(skillSelector, BorderLayout.CENTER);
+
+		progressContainer.add(selectorCard);
+		progressContainer.add(Box.createVerticalStrut(6));
+
+		Skill selectedSkill = (Skill) skillSelector.getSelectedItem();
+		if (selectedSkill == null) selectedSkill = Skill.AGILITY;
+		int level = cachedSkills.getOrDefault(selectedSkill, 1);
+
+		OptimalLevelingGuide.TrainingMethod current = OptimalLevelingGuide.getOptimalMethod(selectedSkill, level);
+		OptimalLevelingGuide.TrainingMethod next = OptimalLevelingGuide.getNextMethod(selectedSkill, level);
+
+		if (current != null)
+		{
+			JPanel currentCard = new JPanel();
+			currentCard.setLayout(new BoxLayout(currentCard, BoxLayout.Y_AXIS));
+			currentCard.setBackground(config.theme().getCardBackground());
+			currentCard.setBorder(BorderFactory.createCompoundBorder(
+				BorderFactory.createLineBorder(config.theme().getPrimaryColor(), 1),
+				new EmptyBorder(8, 8, 8, 8)
+			));
+
+			JLabel curTitle = new JLabel("\uD83C\uDFAF Lvl " + level + " " + selectedSkill.getName() + " Optimal Method");
+			curTitle.setFont(FontManager.getRunescapeBoldFont());
+			curTitle.setForeground(config.theme().getPrimaryColor());
+
+			JLabel methodName = new JLabel(current.getName());
+			methodName.setFont(FontManager.getRunescapeBoldFont());
+			methodName.setForeground(Color.WHITE);
+
+			JLabel rate = new JLabel("\u26A1 " + current.getRate());
+			rate.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 10));
+			rate.setForeground(new Color(100, 240, 120));
+
+			JLabel loc = new JLabel("\uD83D\uDCCD " + current.getLocation());
+			loc.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 10));
+			loc.setForeground(Color.LIGHT_GRAY);
+
+			JLabel notes = new JLabel("<html><body style='width: 170px;'>\uD83D\uDCA1 " + current.getNotes() + "</body></html>");
+			notes.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 9));
+			notes.setForeground(Color.GRAY);
+
+			currentCard.add(curTitle);
+			currentCard.add(Box.createVerticalStrut(3));
+			currentCard.add(methodName);
+			currentCard.add(Box.createVerticalStrut(2));
+			currentCard.add(rate);
+			currentCard.add(Box.createVerticalStrut(2));
+			currentCard.add(loc);
+			currentCard.add(Box.createVerticalStrut(3));
+			currentCard.add(notes);
+
+			progressContainer.add(currentCard);
+			progressContainer.add(Box.createVerticalStrut(6));
+		}
+
+		if (next != null)
+		{
+			JPanel nextCard = new JPanel();
+			nextCard.setLayout(new BoxLayout(nextCard, BoxLayout.Y_AXIS));
+			nextCard.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+			nextCard.setBorder(BorderFactory.createCompoundBorder(
+				BorderFactory.createLineBorder(ColorScheme.DARKER_GRAY_HOVER_COLOR, 1),
+				new EmptyBorder(6, 6, 6, 6)
+			));
+
+			JLabel nextHeader = new JLabel("\uD83D\uDD13 Next Unlock (Level " + next.getMinLevel() + ")");
+			nextHeader.setFont(FontManager.getRunescapeBoldFont());
+			nextHeader.setForeground(new Color(255, 185, 80));
+
+			JLabel nextName = new JLabel(next.getName() + " (" + next.getRate() + ")");
+			nextName.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 10));
+			nextName.setForeground(Color.LIGHT_GRAY);
+
+			nextCard.add(nextHeader);
+			nextCard.add(Box.createVerticalStrut(2));
+			nextCard.add(nextName);
+
+			progressContainer.add(nextCard);
+			progressContainer.add(Box.createVerticalStrut(10));
+		}
+
+		// Account Milestones Section
+		JLabel milestoneHeading = new JLabel("\uD83C\uDFC5 Account Milestone Radar");
+		milestoneHeading.setFont(FontManager.getRunescapeBoldFont());
+		milestoneHeading.setForeground(config.theme().getPrimaryColor());
+		progressContainer.add(milestoneHeading);
+		progressContainer.add(Box.createVerticalStrut(6));
 
 		for (Milestone milestone : MilestoneRepository.getMilestones())
 		{
-			JPanel card = createMilestoneCard(milestone, skills);
-			roadmapContainer.add(card);
-			roadmapContainer.add(Box.createVerticalStrut(6));
+			JPanel card = createMilestoneCard(milestone, cachedSkills);
+			progressContainer.add(card);
+			progressContainer.add(Box.createVerticalStrut(6));
 		}
 	}
 
@@ -373,22 +496,18 @@ public class AstrariumPanel extends PluginPanel
 		return card;
 	}
 
-	private void refreshQuests(Client client, Map<Skill, Integer> skills)
+	// 2. QUESTS TAB
+	private void refreshQuestsTab(Client client, Map<Skill, Integer> skills)
 	{
 		questsContainer.removeAll();
 
 		List<OptimalQuestGuide.QuestEntry> quests = OptimalQuestGuide.getOptimalQuests();
 		int completedCount = 0;
-
 		for (OptimalQuestGuide.QuestEntry q : quests)
 		{
-			if (q.getState(client) == QuestState.FINISHED)
-			{
-				completedCount++;
-			}
+			if (q.getState(client) == QuestState.FINISHED) completedCount++;
 		}
 
-		// Quest Progress Banner
 		JPanel banner = new JPanel(new BorderLayout());
 		banner.setBackground(config.theme().getHeaderGradientEnd());
 		banner.setBorder(new EmptyBorder(8, 8, 8, 8));
@@ -445,131 +564,276 @@ public class AstrariumPanel extends PluginPanel
 		}
 	}
 
-	private void refreshLeveling()
+	// 3. DIARIES TAB
+	private void refreshDiariesTab(Map<Skill, Integer> skills)
 	{
-		levelingContainer.removeAll();
+		diariesContainer.removeAll();
 
-		// Skill picker dropdown header
-		JPanel selectorCard = new JPanel(new BorderLayout(4, 0));
-		selectorCard.setBackground(config.theme().getCardBackground());
-		selectorCard.setBorder(new EmptyBorder(6, 6, 6, 6));
+		JLabel heading = new JLabel("\uD83D\uDCDC High-Impact Diary Perks");
+		heading.setFont(FontManager.getRunescapeBoldFont());
+		heading.setForeground(config.theme().getPrimaryColor());
+		diariesContainer.add(heading);
+		diariesContainer.add(Box.createVerticalStrut(6));
 
-		JLabel pickLabel = new JLabel("Select Skill:");
-		pickLabel.setFont(FontManager.getRunescapeBoldFont());
-		pickLabel.setForeground(config.theme().getPrimaryColor());
-
-		selectorCard.add(pickLabel, BorderLayout.WEST);
-		selectorCard.add(skillSelector, BorderLayout.CENTER);
-
-		levelingContainer.add(selectorCard);
-		levelingContainer.add(Box.createVerticalStrut(8));
-
-		Skill selectedSkill = (Skill) skillSelector.getSelectedItem();
-		if (selectedSkill == null)
+		for (DiaryRepository.DiaryEntry diary : DiaryRepository.getDiaries())
 		{
-			selectedSkill = Skill.AGILITY;
-		}
+			boolean eligible = diary.meetsRequirements(skills);
 
-		int level = cachedSkills.getOrDefault(selectedSkill, 1);
-
-		OptimalLevelingGuide.TrainingMethod current = OptimalLevelingGuide.getOptimalMethod(selectedSkill, level);
-		OptimalLevelingGuide.TrainingMethod next = OptimalLevelingGuide.getNextMethod(selectedSkill, level);
-
-		// Current optimal method card
-		if (current != null)
-		{
-			JPanel currentCard = new JPanel();
-			currentCard.setLayout(new BoxLayout(currentCard, BoxLayout.Y_AXIS));
-			currentCard.setBackground(config.theme().getCardBackground());
-			currentCard.setBorder(BorderFactory.createCompoundBorder(
-				BorderFactory.createLineBorder(config.theme().getPrimaryColor(), 1),
-				new EmptyBorder(8, 8, 8, 8)
+			JPanel card = new JPanel();
+			card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
+			card.setBackground(config.theme().getCardBackground());
+			card.setBorder(BorderFactory.createCompoundBorder(
+				BorderFactory.createLineBorder(eligible ? new Color(50, 180, 80) : ColorScheme.DARKER_GRAY_HOVER_COLOR, 1),
+				new EmptyBorder(6, 6, 6, 6)
 			));
 
-			JLabel curTitle = new JLabel("\uD83C\uDFAF Level " + level + " Optimal Method");
-			curTitle.setFont(FontManager.getRunescapeBoldFont());
-			curTitle.setForeground(config.theme().getPrimaryColor());
+			JLabel title = new JLabel((eligible ? "\u2705 " : "\uD83D\uDD12 ") + diary.getRegion() + " (" + diary.getTier() + ")");
+			title.setFont(FontManager.getRunescapeBoldFont());
+			title.setForeground(eligible ? Color.WHITE : config.theme().getPrimaryColor());
 
-			JLabel methodName = new JLabel(current.getName());
-			methodName.setFont(FontManager.getRunescapeBoldFont());
-			methodName.setForeground(Color.WHITE);
+			JLabel reward = new JLabel("<html><body style='width: 170px;'>\uD83C\uDFC6 " + diary.getRewardHighlights() + "</body></html>");
+			reward.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 10));
+			reward.setForeground(Color.LIGHT_GRAY);
 
-			JLabel rate = new JLabel("\u26A1 Rate: " + current.getRate());
-			rate.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 10));
-			rate.setForeground(new Color(100, 240, 120));
+			JLabel reqs = new JLabel(diary.getMissingSkillsString(skills));
+			reqs.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 9));
+			reqs.setForeground(eligible ? new Color(100, 240, 120) : new Color(230, 80, 80));
 
-			JLabel loc = new JLabel("\uD83D\uDCCD " + current.getLocation());
-			loc.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 10));
-			loc.setForeground(Color.LIGHT_GRAY);
+			card.add(title);
+			card.add(Box.createVerticalStrut(2));
+			card.add(reward);
+			card.add(Box.createVerticalStrut(3));
+			card.add(reqs);
 
-			JLabel notes = new JLabel("<html><body style='width: 170px;'>\uD83D\uDCA1 " + current.getNotes() + "</body></html>");
-			notes.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 9));
-			notes.setForeground(Color.GRAY);
-
-			currentCard.add(curTitle);
-			currentCard.add(Box.createVerticalStrut(4));
-			currentCard.add(methodName);
-			currentCard.add(Box.createVerticalStrut(2));
-			currentCard.add(rate);
-			currentCard.add(Box.createVerticalStrut(2));
-			currentCard.add(loc);
-			currentCard.add(Box.createVerticalStrut(4));
-			currentCard.add(notes);
-
-			levelingContainer.add(currentCard);
-			levelingContainer.add(Box.createVerticalStrut(8));
-		}
-
-		// Next unlock preview card
-		if (next != null)
-		{
-			JPanel nextCard = new JPanel();
-			nextCard.setLayout(new BoxLayout(nextCard, BoxLayout.Y_AXIS));
-			nextCard.setBackground(ColorScheme.DARKER_GRAY_COLOR);
-			nextCard.setBorder(BorderFactory.createCompoundBorder(
-				BorderFactory.createLineBorder(ColorScheme.DARKER_GRAY_HOVER_COLOR, 1),
-				new EmptyBorder(8, 8, 8, 8)
-			));
-
-			JLabel nextHeader = new JLabel("\uD83D\uDD13 Next Unlock (Level " + next.getMinLevel() + ")");
-			nextHeader.setFont(FontManager.getRunescapeBoldFont());
-			nextHeader.setForeground(new Color(255, 185, 80));
-
-			JLabel nextName = new JLabel(next.getName());
-			nextName.setFont(FontManager.getRunescapeBoldFont());
-			nextName.setForeground(Color.WHITE);
-
-			JLabel nextRate = new JLabel("\u26A1 Expected: " + next.getRate());
-			nextRate.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 10));
-			nextRate.setForeground(Color.LIGHT_GRAY);
-
-			JLabel nextLoc = new JLabel("\uD83D\uDCCD " + next.getLocation());
-			nextLoc.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 10));
-			nextLoc.setForeground(Color.GRAY);
-
-			nextCard.add(nextHeader);
-			nextCard.add(Box.createVerticalStrut(3));
-			nextCard.add(nextName);
-			nextCard.add(Box.createVerticalStrut(2));
-			nextCard.add(nextRate);
-			nextCard.add(Box.createVerticalStrut(2));
-			nextCard.add(nextLoc);
-
-			levelingContainer.add(nextCard);
+			diariesContainer.add(card);
+			diariesContainer.add(Box.createVerticalStrut(4));
 		}
 	}
 
-	private void refreshTimeline(List<AstrariumEvent> events)
+	// 4. GEAR TAB (BiS Progression Ladder + Activity Readiness Audit)
+	private void refreshGearTab(Client client)
 	{
-		timelineContainer.removeAll();
+		gearContainer.removeAll();
 
+		// Readiness warnings banner first
+		List<ActivityReadiness.ReadinessWarning> warnings = ActivityReadiness.auditInventory(client, plugin.getCurrentSlayerTask());
+		JPanel statusBanner = new JPanel(new BorderLayout());
+		statusBanner.setBorder(new EmptyBorder(6, 6, 6, 6));
+
+		if (warnings.isEmpty())
+		{
+			statusBanner.setBackground(new Color(25, 45, 25));
+			JLabel ok = new JLabel("\u2705 Slayer Gear Ready", SwingConstants.CENTER);
+			ok.setFont(FontManager.getRunescapeBoldFont());
+			ok.setForeground(new Color(100, 240, 120));
+			statusBanner.add(ok, BorderLayout.CENTER);
+		}
+		else
+		{
+			statusBanner.setBackground(new Color(55, 25, 25));
+			JLabel warn = new JLabel("\u26A0\uFE0F Missing Gear Alert (" + warnings.size() + ")", SwingConstants.CENTER);
+			warn.setFont(FontManager.getRunescapeBoldFont());
+			warn.setForeground(new Color(255, 90, 90));
+			statusBanner.add(warn, BorderLayout.CENTER);
+		}
+
+		gearContainer.add(statusBanner);
+		gearContainer.add(Box.createVerticalStrut(4));
+
+		for (ActivityReadiness.ReadinessWarning w : warnings)
+		{
+			JPanel card = new JPanel();
+			card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
+			card.setBackground(config.theme().getCardBackground());
+			card.setBorder(BorderFactory.createCompoundBorder(
+				BorderFactory.createLineBorder(w.isSevere() ? new Color(220, 50, 50) : ColorScheme.DARKER_GRAY_HOVER_COLOR, 1),
+				new EmptyBorder(6, 6, 6, 6)
+			));
+
+			JLabel title = new JLabel(w.getTitle());
+			title.setFont(FontManager.getRunescapeBoldFont());
+			title.setForeground(Color.WHITE);
+
+			JLabel desc = new JLabel("<html><body style='width: 170px;'>" + w.getDescription() + "</body></html>");
+			desc.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 10));
+			desc.setForeground(Color.LIGHT_GRAY);
+
+			card.add(title);
+			card.add(Box.createVerticalStrut(2));
+			card.add(desc);
+
+			gearContainer.add(card);
+			gearContainer.add(Box.createVerticalStrut(4));
+		}
+
+		gearContainer.add(Box.createVerticalStrut(6));
+
+		// Combat Style Selector
+		JPanel styleCard = new JPanel(new BorderLayout(4, 0));
+		styleCard.setBackground(config.theme().getCardBackground());
+		styleCard.setBorder(new EmptyBorder(6, 6, 6, 6));
+
+		JLabel styleLabel = new JLabel("Ladder:");
+		styleLabel.setFont(FontManager.getRunescapeBoldFont());
+		styleLabel.setForeground(config.theme().getPrimaryColor());
+
+		styleCard.add(styleLabel, BorderLayout.WEST);
+		styleCard.add(gearStyleSelector, BorderLayout.CENTER);
+
+		gearContainer.add(styleCard);
+		gearContainer.add(Box.createVerticalStrut(6));
+
+		GearProgression.Style selectedStyle = (GearProgression.Style) gearStyleSelector.getSelectedItem();
+		if (selectedStyle == null) selectedStyle = GearProgression.Style.MELEE;
+
+		for (GearProgression.GearUpgrade up : GearProgression.getUpgrades(selectedStyle))
+		{
+			JPanel upCard = new JPanel();
+			upCard.setLayout(new BoxLayout(upCard, BoxLayout.Y_AXIS));
+			upCard.setBackground(config.theme().getCardBackground());
+			upCard.setBorder(BorderFactory.createCompoundBorder(
+				BorderFactory.createLineBorder(config.theme().getSecondaryColor(), 1),
+				new EmptyBorder(6, 6, 6, 6)
+			));
+
+			JLabel title = new JLabel("[Tier " + up.getTier() + " " + up.getSlot() + "] " + up.getName());
+			title.setFont(FontManager.getRunescapeBoldFont());
+			title.setForeground(Color.WHITE);
+
+			JLabel bonus = new JLabel("<html><body style='width: 170px;'>\u26A1 " + up.getBonusDescription() + "</body></html>");
+			bonus.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 10));
+			bonus.setForeground(new Color(100, 240, 120));
+
+			JLabel src = new JLabel("<html><body style='width: 170px;'>\uD83D\uDCCD " + up.getRequirementOrSource() + "</body></html>");
+			src.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 9));
+			src.setForeground(Color.LIGHT_GRAY);
+
+			upCard.add(title);
+			upCard.add(Box.createVerticalStrut(2));
+			upCard.add(bonus);
+			upCard.add(Box.createVerticalStrut(2));
+			upCard.add(src);
+
+			gearContainer.add(upCard);
+			gearContainer.add(Box.createVerticalStrut(4));
+		}
+	}
+
+	// 5. DAILIES TAB
+	private void refreshDailiesTab()
+	{
+		dailiesContainer.removeAll();
+
+		JLabel heading = new JLabel("\u2600\uFE0F Daily & Weekly Resets Tracker");
+		heading.setFont(FontManager.getRunescapeBoldFont());
+		heading.setForeground(config.theme().getPrimaryColor());
+		dailiesContainer.add(heading);
+		dailiesContainer.add(Box.createVerticalStrut(6));
+
+		for (DailiesTracker.DailyActivity act : DailiesTracker.getActivities())
+		{
+			JPanel card = new JPanel(new BorderLayout(4, 0));
+			card.setBackground(config.theme().getCardBackground());
+			card.setBorder(BorderFactory.createCompoundBorder(
+				BorderFactory.createLineBorder(ColorScheme.DARKER_GRAY_HOVER_COLOR, 1),
+				new EmptyBorder(6, 6, 6, 6)
+			));
+
+			JCheckBox box = new JCheckBox();
+			box.setSelected(completedDailies.contains(act.getId()));
+			box.setOpaque(false);
+			box.addActionListener(e ->
+			{
+				if (box.isSelected()) completedDailies.add(act.getId());
+				else completedDailies.remove(act.getId());
+			});
+
+			JPanel text = new JPanel();
+			text.setLayout(new BoxLayout(text, BoxLayout.Y_AXIS));
+			text.setOpaque(false);
+
+			JLabel name = new JLabel(act.getName());
+			name.setFont(FontManager.getRunescapeBoldFont());
+			name.setForeground(Color.WHITE);
+
+			JLabel reward = new JLabel("<html><body style='width: 155px;'>\uD83D\uDCB0 " + act.getRewardDescription() + "</body></html>");
+			reward.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 10));
+			reward.setForeground(config.theme().getPrimaryColor());
+
+			JLabel loc = new JLabel("<html><body style='width: 155px;'>\uD83D\uDCCD " + act.getLocation() + "</body></html>");
+			loc.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 9));
+			loc.setForeground(Color.GRAY);
+
+			text.add(name);
+			text.add(Box.createVerticalStrut(2));
+			text.add(reward);
+			text.add(Box.createVerticalStrut(2));
+			text.add(loc);
+
+			card.add(box, BorderLayout.WEST);
+			card.add(text, BorderLayout.CENTER);
+
+			dailiesContainer.add(card);
+			dailiesContainer.add(Box.createVerticalStrut(4));
+		}
+	}
+
+	// 6. SESSION TAB
+	private void refreshSessionTab()
+	{
+		sessionContainer.removeAll();
+
+		SessionTracker session = plugin.getSessionTracker();
+
+		// Session Stats Card
+		JPanel statsCard = new JPanel();
+		statsCard.setLayout(new BoxLayout(statsCard, BoxLayout.Y_AXIS));
+		statsCard.setBackground(config.theme().getCardBackground());
+		statsCard.setBorder(BorderFactory.createCompoundBorder(
+			BorderFactory.createLineBorder(config.theme().getPrimaryColor(), 1),
+			new EmptyBorder(8, 8, 8, 8)
+		));
+
+		JLabel sessionHead = new JLabel("\u23F1\uFE0F Session Time: " + session.getSessionDurationString());
+		sessionHead.setFont(FontManager.getRunescapeBoldFont());
+		sessionHead.setForeground(Color.WHITE);
+
+		JLabel xpLabel = new JLabel(String.format("\uD83C\uDF1F Gained: %,d XP (%,d XP/hr)", session.getTotalXpGained(), session.getXpPerHour()));
+		xpLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 10));
+		xpLabel.setForeground(new Color(100, 240, 120));
+
+		JLabel statsLine = new JLabel("⚔️ Bosses: " + session.getBossKillsCount() + " | 📜 Clues: " + session.getCluesCount());
+		statsLine.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 10));
+		statsLine.setForeground(Color.LIGHT_GRAY);
+
+		JButton discordBtn = new JButton("\uD83D\uDCE4 Share Card to Discord");
+		discordBtn.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 10));
+		discordBtn.setFocusPainted(false);
+		discordBtn.setBackground(new Color(88, 101, 242)); // Discord blurple
+		discordBtn.setForeground(Color.WHITE);
+		discordBtn.setAlignmentX(CENTER_ALIGNMENT);
+		discordBtn.addActionListener(e -> plugin.exportSessionToDiscord(cachedCombatLevel));
+
+		statsCard.add(sessionHead);
+		statsCard.add(Box.createVerticalStrut(3));
+		statsCard.add(xpLabel);
+		statsCard.add(Box.createVerticalStrut(3));
+		statsCard.add(statsLine);
+		statsCard.add(Box.createVerticalStrut(6));
+		statsCard.add(discordBtn);
+
+		sessionContainer.add(statsCard);
+		sessionContainer.add(Box.createVerticalStrut(8));
+
+		// Timeline items
+		List<AstrariumEvent> events = plugin.getTimelineEvents();
 		if (events.isEmpty())
 		{
-			JLabel empty = new JLabel("<html><center>No events recorded this session.<br>Level up or slay bosses to write your Astrarium!</center></html>", SwingConstants.CENTER);
+			JLabel empty = new JLabel("<html><center>No events recorded this session.<br>Slay bosses, level up, or solve clues!</center></html>", SwingConstants.CENTER);
 			empty.setFont(new Font(Font.SANS_SERIF, Font.ITALIC, 11));
 			empty.setForeground(Color.GRAY);
-			empty.setBorder(new EmptyBorder(30, 10, 10, 10));
-			timelineContainer.add(empty);
+			empty.setBorder(new EmptyBorder(20, 10, 10, 10));
+			sessionContainer.add(empty);
 			return;
 		}
 
@@ -603,64 +867,8 @@ public class AstrariumPanel extends PluginPanel
 			entry.add(badge, BorderLayout.WEST);
 			entry.add(textPanel, BorderLayout.CENTER);
 
-			timelineContainer.add(entry);
-			timelineContainer.add(Box.createVerticalStrut(4));
-		}
-	}
-
-	private void refreshReadiness(Client client)
-	{
-		readinessContainer.removeAll();
-
-		List<ActivityReadiness.ReadinessWarning> warnings = ActivityReadiness.auditInventory(client, plugin.getCurrentSlayerTask());
-
-		JPanel statusBanner = new JPanel(new BorderLayout());
-		statusBanner.setBorder(new EmptyBorder(8, 8, 8, 8));
-
-		if (warnings.isEmpty())
-		{
-			statusBanner.setBackground(new Color(25, 45, 25));
-			JLabel ok = new JLabel("\u2705 All Systems Ready", SwingConstants.CENTER);
-			ok.setFont(FontManager.getRunescapeBoldFont());
-			ok.setForeground(new Color(100, 240, 120));
-			statusBanner.add(ok, BorderLayout.CENTER);
-		}
-		else
-		{
-			statusBanner.setBackground(new Color(55, 25, 25));
-			JLabel warn = new JLabel("\u26A0\uFE0F Attention Needed (" + warnings.size() + ")", SwingConstants.CENTER);
-			warn.setFont(FontManager.getRunescapeBoldFont());
-			warn.setForeground(new Color(255, 90, 90));
-			statusBanner.add(warn, BorderLayout.CENTER);
-		}
-
-		readinessContainer.add(statusBanner);
-		readinessContainer.add(Box.createVerticalStrut(8));
-
-		for (ActivityReadiness.ReadinessWarning w : warnings)
-		{
-			JPanel card = new JPanel();
-			card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
-			card.setBackground(config.theme().getCardBackground());
-			card.setBorder(BorderFactory.createCompoundBorder(
-				BorderFactory.createLineBorder(w.isSevere() ? new Color(220, 50, 50) : ColorScheme.DARKER_GRAY_HOVER_COLOR, 1),
-				new EmptyBorder(6, 6, 6, 6)
-			));
-
-			JLabel title = new JLabel(w.getTitle());
-			title.setFont(FontManager.getRunescapeBoldFont());
-			title.setForeground(Color.WHITE);
-
-			JLabel desc = new JLabel("<html><body style='width: 170px;'>" + w.getDescription() + "</body></html>");
-			desc.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 10));
-			desc.setForeground(Color.LIGHT_GRAY);
-
-			card.add(title);
-			card.add(Box.createVerticalStrut(2));
-			card.add(desc);
-
-			readinessContainer.add(card);
-			readinessContainer.add(Box.createVerticalStrut(4));
+			sessionContainer.add(entry);
+			sessionContainer.add(Box.createVerticalStrut(4));
 		}
 	}
 }

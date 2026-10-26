@@ -49,6 +49,7 @@ public class AstrariumPlugin extends Plugin
 	private static final Pattern COMBAT_ACHIEVEMENT_PATTERN = Pattern.compile("Congratulations, you've completed an? (?:Easy|Medium|Hard|Elite|Master|Grandmaster) combat task: (.*)\\.");
 
 	@Inject
+	@Getter
 	private Client client;
 
 	@Inject
@@ -59,6 +60,12 @@ public class AstrariumPlugin extends Plugin
 
 	@Inject
 	private AstrariumConfig config;
+
+	@Inject
+	private AstrariumDiscordService discordService;
+
+	@Getter
+	private final SessionTracker sessionTracker = new SessionTracker();
 
 	@Getter
 	private final List<AstrariumEvent> timelineEvents = Collections.synchronizedList(new ArrayList<>());
@@ -121,6 +128,9 @@ public class AstrariumPlugin extends Plugin
 	{
 		Skill skill = event.getSkill();
 		int newLevel = event.getLevel();
+		long currentXp = event.getXp();
+
+		sessionTracker.recordSkillXp(skill, currentXp);
 
 		Integer prevLevel = previousLevels.get(skill);
 		if (prevLevel != null && newLevel > prevLevel)
@@ -130,7 +140,7 @@ public class AstrariumPlugin extends Plugin
 				timelineEvents.add(0, new AstrariumEvent(
 					AstrariumEvent.Type.LEVEL_UP,
 					skill.getName() + " reached Level " + newLevel + "!",
-					"XP: " + String.format("%,d", event.getXp())
+					"XP: " + String.format("%,d", currentXp)
 				));
 			}
 			previousLevels.put(skill, newLevel);
@@ -158,6 +168,7 @@ public class AstrariumPlugin extends Plugin
 		{
 			String boss = bossMatcher.group(1).trim();
 			String count = bossMatcher.group(2);
+			sessionTracker.incrementBossKills();
 			if (config.trackBossKills())
 			{
 				timelineEvents.add(0, new AstrariumEvent(
@@ -175,6 +186,7 @@ public class AstrariumPlugin extends Plugin
 		if (collMatcher.find())
 		{
 			String item = collMatcher.group(1);
+			sessionTracker.incrementCollectionLog();
 			if (config.trackCollectionLog())
 			{
 				timelineEvents.add(0, new AstrariumEvent(
@@ -209,6 +221,7 @@ public class AstrariumPlugin extends Plugin
 		{
 			String count = clueMatcher.group(1);
 			String tier = clueMatcher.group(2);
+			sessionTracker.incrementClues();
 			if (config.trackClues())
 			{
 				timelineEvents.add(0, new AstrariumEvent(
@@ -226,6 +239,7 @@ public class AstrariumPlugin extends Plugin
 		if (questMatcher.find())
 		{
 			String questName = questMatcher.group(1).trim();
+			sessionTracker.incrementQuests();
 			if (config.trackQuests())
 			{
 				timelineEvents.add(0, new AstrariumEvent(
@@ -255,6 +269,15 @@ public class AstrariumPlugin extends Plugin
 		}
 	}
 
+	public void exportSessionToDiscord(int combatLevel)
+	{
+		String playerName = client.getLocalPlayer() != null && client.getLocalPlayer().getName() != null
+			? client.getLocalPlayer().getName()
+			: "Adventurer";
+
+		discordService.sendSessionCard(playerName, combatLevel, sessionTracker);
+	}
+
 	@Subscribe
 	public void onGameTick(GameTick event)
 	{
@@ -280,6 +303,7 @@ public class AstrariumPlugin extends Plugin
 		for (Skill skill : Skill.values())
 		{
 			previousLevels.put(skill, client.getRealSkillLevel(skill));
+			sessionTracker.recordSkillXp(skill, client.getSkillExperience(skill));
 		}
 	}
 }
